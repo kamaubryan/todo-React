@@ -1,44 +1,53 @@
 import React, { useState, useEffect } from "react";
-import "./App.css"; // Import the CSS styles
+import "./App.css";
 
 function App() {
-  const [tasks, setTasks] = useState([]); // State to hold tasks
-  const [inputValue, setInputValue] = useState(""); // State for input
-
-  // Load tasks from localStorage on mount
-  useEffect(() => {
+  const [tasks, setTasks] = useState(() => {
+    // Load tasks from localStorage on initial render
     const savedTasks = localStorage.getItem("tasks");
-    if (savedTasks) {
-      setTasks(JSON.parse(savedTasks));
-    }
-  }, []);
+    return savedTasks ? JSON.parse(savedTasks) : []; // Parse only if there's valid saved data
+  });
 
-  // Save tasks to localStorage whenever tasks change
+  const [inputValue, setInputValue] = useState("");
+  const [editingIndex, setEditingIndex] = useState(null);
+
+  // Save tasks to localStorage whenever tasks state changes
   useEffect(() => {
     localStorage.setItem("tasks", JSON.stringify(tasks));
   }, [tasks]);
 
-  // Function to add a new task
-  const addTask = () => {
+  const addOrEditTask = () => {
     if (inputValue.trim() === "") {
-      alert("Please write something!"); // Alert for empty input
+      alert("Please write something!");
+      return;
+    }
+
+    if (editingIndex !== null) {
+      const updatedTasks = [...tasks];
+      updatedTasks[editingIndex].text = inputValue;
+      setTasks(updatedTasks);
+      setEditingIndex(null);
     } else {
       setTasks([...tasks, { text: inputValue, completed: false }]);
-      setInputValue(""); // Clear the input field after adding
     }
+
+    setInputValue("");
   };
 
-  // Function to toggle task completion
   const toggleTask = (index) => {
     const updatedTasks = [...tasks];
     updatedTasks[index].completed = !updatedTasks[index].completed;
     setTasks(updatedTasks);
   };
 
-  // Function to remove a task
   const removeTask = (index) => {
     const updatedTasks = tasks.filter((_, i) => i !== index);
     setTasks(updatedTasks);
+  };
+
+  const editTask = (index) => {
+    setInputValue(tasks[index].text);
+    setEditingIndex(index);
   };
 
   return (
@@ -53,29 +62,41 @@ function App() {
             <input
               type="text"
               id="input-box"
-              placeholder="Add your task"
-              value={inputValue} // Controlled input value
-              onChange={(e) => setInputValue(e.target.value)} // Update state on input change
+              placeholder="enter your task"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
             />
-            <button onClick={addTask}>Add task</button>{" "}
-            {/* Correct event handler */}
+            <button onClick={addOrEditTask}>
+              {editingIndex !== null ? "Edit Task" : "Add Task"}
+            </button>
           </div>
 
           <ul id="list-container" className="scroll">
             {tasks.map((task, index) => (
               <li key={index} className={task.completed ? "checked" : ""}>
                 <span onClick={() => toggleTask(index)}>{task.text}</span>
-                <span
-                  style={{
-                    marginLeft: "10px",
-                    cursor: "pointer",
-                    color: "red",
-                    fontWeight: "bold",
-                  }}
-                  onClick={() => removeTask(index)} // Remove task
-                >
-                  ✖ {/* This represents the delete icon */}
-                </span>
+                <div className="dv">
+                  <span
+                    className="task-btn edit-btn"
+                    onClick={() => editTask(index)}
+                  >
+                    edit
+                  </span>
+
+                  <span
+                    className="task-btn delete-btn"
+                    onClick={() => removeTask(index)}
+                  >
+                    remove
+                  </span>
+
+                  <span
+                    className="task-btn done-btn"
+                    onClick={() => toggleTask(index)}
+                  >
+                    {task.completed ? "Undo" : "mark as done"}
+                  </span>
+                </div>
               </li>
             ))}
           </ul>
